@@ -1,56 +1,82 @@
-# PriceParser: Web Scraper with Telegram Notifications
+# PriceParser: Telegram Bot + Web Interface for Price Monitoring
 
 ## Overview
 
 ### Problem
-Internet stores and freelancers often need to monitor product prices on competitor websites, but manual tracking is time-consuming and inefficient.
+Businesses and freelancers often need to monitor product prices (e.g., competitors), but manual tracking is time-consuming and inefficient.
 
 ### Solution
-PriceParser is a Python-based web scraper that collects product prices from a target website, tracks changes, and sends automated reports via Telegram, with optional email notifications.
+**PriceParser** is a Python-powered price tracking tool that scrapes data from websites, stores price history, detects changes, and sends updates via Telegram or renders them in a web interface using FastAPI + Jinja2.
 
 ### Impact
-Saves time for businesses and freelancers by automating price monitoring, providing real-time updates, and enabling quick decision-making based on market trends.
+Automates the entire price-monitoring process, saves time, and helps users react faster to market changes through visual reports and timely alerts.
+
+---
 
 ## About the Project
-PriceParser is a lightweight web scraping tool built with Python, designed to extract product prices from a website (e.g., a demo online store) and notify users of changes via Telegram. It uses BeautifulSoup for parsing, SQLite for data storage, and aiogram for Telegram notifications. The project showcases my expertise in web scraping, automation, and bot development.
+
+**PriceParser** is a lightweight full-stack solution that includes:
+
+- 🤖 A Telegram bot (built with `aiogram`) for notifications and user commands.
+- 🌐 A FastAPI web interface with HTML templates for viewing prices and trends.
+- 📈 Historical graphs for each product (7-day timeline).
+- 💬 Flexible commands like `/report`, `/reportdelta`, `/history`, `/notifychange`.
+- ⚙️ Per-user preference: receive all prices or only price changes.
+
+The tool uses `BeautifulSoup` and `peewee` for scraping and storage, `matplotlib` for graph generation, and `schedule` for periodic tasks.
+
+---
 
 ## Features
-- **Web Scraping**: Extracts product names and prices from a specified website.
-- **Price Tracking**: Stores data in SQLite to detect price changes.
-- **Telegram Notifications**: Sends reports to a Telegram chat with product details and price changes.
-- **Periodic Updates**: Runs hourly checks using the schedule library.
-- **Optional Email Notifications**: Sends reports via SMTP (e.g., Gmail).
-- **Subscription Model**: Users can subscribe/unsubscribe to notifications via Telegram commands.
 
+- **Web Scraping**: Extracts product names and prices from a target source.
+- **Price History**: Stores daily prices in SQLite for comparisons.
+- **Telegram Notifications**: Sends hourly reports to subscribed users.
+- **Subscription Model**: Users can subscribe/unsubscribe to notifications via Telegram commands.
+- **Periodic Updates**: Runs hourly checks using the schedule library.
+- **Selective Alerts**: Option to receive all updates or only price changes.
+- **Sort & Filter**: Sort reports by name or price.
+- **Web Interface (FastAPI)**:
+  - Homepage with filterable, sortable product table
+  - Price history charts
+  - JSON API (`/api/products`, `/api/products/{name}`)
+- **Bot Commands**:
+  - `/start`, `/subscribe`, `/unsubscribe`
+  - `/report`, `/reportdelta`, `/notifychange`
+  - `/sort`, `/history {product}`
+
+---
 
 ## How to Work with PriceParser
 
-### Access the Bot
+### Telegram Bot Usage
+
 Find the bot in Telegram (e.g., t.me/PriceParserGoodBot, or @PriceParserGoodBot) or run locally (see Setup Instructions).
 
-### User Workflow
-1. Start Interaction:
-  - Send /start to receive a welcome message and instructions.
-2. Subscribe to Notifications:
-  - Send /subscribe to receive hourly price reports.
-  - Send /unsubscribe to stop notifications.
-3. Request Report:
-  - Send /report to get the latest product prices and changes.
-4. Receive Updates:
-  - Hourly reports are sent to subscribed users via Telegram.
-  - Optional email reports (if configured).
+1. `/start` — greet the bot
+2. `/subscribe` — receive hourly reports
+3. `/unsubscribe` — stop updates
+4. `/report` — get all product prices
+5. `/reportdelta` — show only price changes
+6. `/notifychange` — toggle notification mode (all vs only changes)
+7. `/sort` — toggle sorting by name/price
+8. `/history` — receive 7-day chart
+9. `/help` - Show help message
 
+---
 
-### Example Usage
-- Send /start: "Welcome to PriceParser! Use /subscribe to receive price updates or /report for the latest prices."
-- Send /subscribe: "You are now subscribed to hourly price reports."
-- Send /report: "Product: Widget A, Price: $10.00 (no change); Product: Widget B, Price: $15.00 (down $1.00)."
-- Receive hourly Telegram message with price updates.
+### Web Interface
 
-### Notes
-- The parser targets a demo store (e.g., https://scrapeme.live/shop/). Update the URL in config.py for other sites.
-- Email notifications require SMTP configuration in .env.
-- Price changes are highlighted in reports (e.g., "up $1.00" or "down $0.50").
+- Homepage: `http://localhost:8000`
+  - Filter by category (e.g., `?category=Pokemon`)
+  - Sort (e.g., `?sort=price`)
+- Product chart: `http://localhost:8000/history/Bulbasaur`
+- JSON API:
+  - `/api/products` — all products
+  - `/api/products?category=...` — by category
+  - `/api/products/{name}` — individual product data
+
+---
 
 ## Setup Instructions
 
@@ -59,14 +85,17 @@ Find the bot in Telegram (e.g., t.me/PriceParserGoodBot, or @PriceParserGoodBot)
     ```bash
    git clone https://github.com/Rostislav62/PriceParser.git
    cd PriceParser
+
 2. Create and activate a virtual environment:
-    ```bash
-   python -m venv venv
-   .\venv\Scripts\activate  # Windows
-   source venv/bin/activate  # Linux/macOS
+    ```bash # Linux
+   python -m venv priceparser-bot 
+   source priceparser-bot/bin/activate
+   .\priceparser-bot\Scripts\activate  # Windows
+
 3. Install dependencies:
     ```bash
    pip install -r requirements.txt
+
 
 ### Create Database
 1. Run the initialization script to create the SQLite database:
@@ -86,11 +115,15 @@ EMAIL_PASSWORD=your_email_password
 - For email, configure SMTP settings (e.g., Gmail credentials).
 
 
-### Run the Parser
+### Start the Telegram bot
 1. Start the bot and parser:
     ```bash
    python main.py
 
+### Run the web server
+1. Start the web server and browser:
+    ``bash
+   uvicorn web_app:app --reload
 
 ## API Keys
 The bot uses external services::
@@ -99,29 +132,42 @@ The bot uses external services::
 
 
 ## Project Structure
-- `main.py` — Bot initialization and scheduler setup.
-- `config.py` — Configuration (Telegram token, SMTP settings).
-- `utils.py` — Database and parsing utilities.
-- `handlers.py` — Telegram command handlers.
-- `services/` — API-specific modules:
-  - `parser.py`:  Web scraping logic.
-  - `notifier.py`: Telegram and email notification logic.
-- `models.py`: SQLite models for prices and subscriptions.
-- `init_db.py`: Database initialization script.
+PriceParser/
+├── main.py                # Starts the Telegram bot and scheduler
+├── handlers.py            # Telegram command logic
+├── config.py              # Configuration (Telegram token, SMTP settings)
+├── models.py              # ORM models (Product, Subscription)
+├── utils.py               # Price saving/loading utilities
+├── init_db.py             # Database initialization script
+├── services/
+│   ├── parser.py          # Web scraping logic
+│   ├── notifier.py        # Notification logic
+│   └── history.py         # Charting and historical data
+├── web_app.py             # FastAPI web interface
+├── templates/             # Jinja2 HTML templates
+├── static/                # CSS, images, and chart output
+├── requirements.txt
+└── .env
+
 
 ## Technologies
-- **Python 3.8**: Core language.
+- **Python 3.8.10**: Core language.
 - **aiogram 2.21**: Telegram Bot API framework.
 - **BeautifulSoup**: HTML parsing.
 - **smtplib**: Email notifications.
 - **requests**: HTTP requests.
 - **schedule**: Periodic tasks.
 - **peewee**: SQLite ORM.
-- **python-dotenv**: Environment variables.
+- **python-dotenv**: Environment variables support.
+- **FastAPI + Jinja2**: web rendering.
+- **matplotlib**: charts
 - **Git**: Version control.
 
+
 ## Author
-Rostislav — Full-stack developer specializing in bot development and API integration. This project is part of my portfolio, showcasing expertise in Telegram bots, NLP, and data automation.
+Rostislav — Full-stack developer specializing in automation, bots, data scraping and API integration. 
+This project is part of my portfolio, showcasing expertise in Telegram bots, NLP, and data automation.
+Telegram: @rostislav62
 
 ## License
 MIT License

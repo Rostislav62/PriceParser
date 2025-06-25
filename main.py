@@ -1,4 +1,4 @@
-# main.py
+# # ~/PriceParser/main.py
 # Основной файл для запуска Grok Insights Bot.
 # Python 3.8.10
 # для корректной работы этого бота я загнузил эти пакеты
@@ -36,7 +36,8 @@ async def main():
     register_handlers(dp)
 
     # Schedule hourly price scraping and notifications
-    schedule.every().hour.do(lambda: asyncio.create_task(scrape_and_notify(bot)))
+    # schedule.every().hour.do(lambda: asyncio.create_task(scrape_and_notify(bot)))
+    schedule.every(1).minutes.do(lambda: asyncio.create_task(scrape_and_notify(bot)))
 
     # Run scheduler in background
     async def run_scheduler():

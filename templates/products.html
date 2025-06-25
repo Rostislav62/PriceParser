@@ -1,0 +1,48 @@
+<!-- templates/products.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Products Table</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: auto; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        body { font-family: sans-serif; padding-top: 40px; }
+        form { text-align: center; margin-bottom: 20px; }
+        h2 { text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>Product Prices</h2>
+
+    <form method="get" action="/products">
+        Category:
+        <input type="text" name="category" value="{{ request.query_params.get('category', '') }}">
+        Sort by:
+        <select name="sort">
+            <option value="name" {% if request.query_params.get('sort') == 'name' %}selected{% endif %}>Name</option>
+            <option value="price" {% if request.query_params.get('sort') == 'price' %}selected{% endif %}>Price</option>
+        </select>
+        <button type="submit">Filter</button>
+    </form>
+
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Timestamp</th>
+        </tr>
+        {% for p in products %}
+        <tr>
+            <td>{{ p.name }}</td>
+            <td>${{ "%.2f"|format(p.price) }}</td>
+            <td>{{ p.category }}</td>
+            <td>{{ p.timestamp.strftime("%Y-%m-%d %H:%M") }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
+

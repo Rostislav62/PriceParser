@@ -1,43 +1,54 @@
-import logging
-import smtplib
-from email.mime.text import MIMEText
-from config import EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASSWORD
-from utils import get_latest_prices, get_previous_prices, get_subscribers
+# ~/PriceParser/services/notifier.py
 
-logger = logging.getLogger(__name__)
+from models import Subscription  # Импортируем модель Subscription
 
 async def notify_subscribers(bot, prices):
     if not prices:
         return
     latest = get_latest_prices()
     previous = get_previous_prices()
-    report = []
+    
+    # Подготовим полные отчёты с изменениями для каждого продукта
+    full_report_lines = []
+    changed_report_lines = []
+
     for name, price in prices.items():
         change = ""
         if name in previous and previous[name] != price:
-            change = f" ({'up' if price > previous[name] else 'down'} ${abs(price - previous[name]):.2f})"
-        report.append(f"Product: {name}, Price: ${price:.2f}{change}")
-    report_text = "\n".join(report)
+            delta = price - previous[name]
+            direction = "up" if delta > 0 else "down"
+            change = f" ({direction} ${abs(delta):.2f})"
+            changed_report_lines.append(f"Product: {name}, Price: ${price:.2f}{change}")
+        else:
+            # Если цена не изменилась или нет в previous — в full_report, но не в changed_report
+            full_report_lines.append(f"Product: {name}, Price: ${price:.2f}{change}")
 
-    # Telegram notifications
-    for user_id in get_subscribers():
+        # Добавляем в полный отчёт всё подряд, включая изменённые
+        if change:
+            full_report_lines.append(f"Product: {name}, Price: ${price:.2f}{change}")
+        elif name not in previous:
+            # новый товар
+            full_report_lines.append(f"Product: {name}, Price: ${price:.2f} (new)")
+
+    full_report_text = "\n".join(full_report_lines)
+    changed_report_text = "\n".join(changed_report_lines)
+
+    # Телеграм уведомления
+    for sub in Subscription.select().where(Subscription.subscribed == True):
+        user_id = sub.user_id
         try:
-            await bot.send_message(user_id, report_text)
-            logger.info(f"Sent Telegram report to {user_id}")
+            if sub.notify_only_on_change:
+                if changed_report_text:
+                    await bot.send_message(user_id, changed_report_text)
+                    logger.info(f"Sent price changes report to {user_id}")
+                else:
+                    logger.info(f"No price changes to notify user {user_id}")
+            else:
+                # Отправляем полный отчёт всегда
+                await bot.send_message(user_id, full_report_text)
+                logger.info(f"Sent full price report to {user_id}")
         except Exception as e:
             logger.error(f"Error sending Telegram report to {user_id}: {str(e)}")
 
-    # Email notification (optional)
-    if EMAIL_HOST and EMAIL_USER and EMAIL_PASSWORD:
-        try:
-            msg = MIMEText(report_text)
-            msg['Subject'] = 'PriceParser Report'
-            msg['From'] = EMAIL_USER
-            msg['To'] = EMAIL_USER
-            with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
-                server.starttls()
-                server.login(EMAIL_USER, EMAIL_PASSWORD)
-                server.send_message(msg)
-            logger.info("Sent email report")
-        except Exception as e:
-            logger.error(f"Error sending email report: {str(e)}")
+    # Email-уведомления оставляем без изменений, если нужно — можно сделать тоже проверку
+

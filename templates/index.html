@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Price Parser</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        h2 { border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+    <h1>Current Product Prices</h1>
+    {% for category, products in categories.items() %}
+        <h2>{{ category }}</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Time</th>
+                <th>History</th>
+            </tr>
+            {% for p in products %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>${{ "%.2f"|format(p.price) }}</td>
+                    <td>{{ p.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><a href="/history/{{ p.name }}">View</a></td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+</body>
+</html>
